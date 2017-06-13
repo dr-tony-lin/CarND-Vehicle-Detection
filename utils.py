@@ -49,8 +49,15 @@ def convert_color(image, cspace):
     cspace: the color space
     '''
     if "max" not in convert_color.__dict__:
-        convert_color.max = None
+        convert_color.max = np.amax(image)
+        if convert_color.max < 2: # the max pxe value should be 0 t 1
+            convert_color.max = 1
+        else: # the max pxe value should be 0 t 255
+            convert_color.max = 255
 
+    # Normalize image first so the valus fall between 0 and 1
+    if convert_color.max == 255:
+        image = np.float32(image)/convert_color.max
     if cspace != 'RGB':
         if cspace == 'HSV':
             image = cv2.cvtColor(image, cv2.COLOR_RGB2HSV)
@@ -64,13 +71,6 @@ def convert_color(image, cspace):
             image = cv2.cvtColor(image, cv2.COLOR_RGB2YCrCb)
         elif cspace == 'GRAY':
             image = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
-        if convert_color.max is None:
-            convert_color.max = np.amax(image)
-            if convert_color.max < 2: # the max pxe value should be 0 t 1
-                convert_color.max = 1.
-            else: # the max pxe value should be 0 t 255
-                convert_color.max = 255.
-        image = image/convert_color.max
     return image
 
 def to_rgb(image, cspace):
