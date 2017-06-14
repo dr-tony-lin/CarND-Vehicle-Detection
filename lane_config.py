@@ -44,7 +44,7 @@ class LaneConfig:
 config = LaneConfig()
 
 # Test flag, True to allow more data to be made available for test
-config.test = True
+config.test = False
 # Use best fit to fit lanes
 config.bestfit = True
 # Use best fit to fit lanes

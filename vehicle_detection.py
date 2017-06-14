@@ -303,6 +303,11 @@ class VehicleDetector:
                     print("Label min, max: ", xmin, ymin, xmax, ymax)
                     bboxes.append(bbox)
 
+                extent = (bbox[1][0] - bbox[0][0], bbox[1][1] - bbox[0][1])
+                min_ext = min(extent[0], extent[1])
+                max_ext = min(extent[0], extent[1])
+                if min_ext < self.config.bbox_threshold or min_ext/max_ext > self.config.bbox_shape_threshold:
+                    continue
                 # Draw the box on the image
                 cv2.rectangle(draw, bbox[0], bbox[1], self.config.border_color, self.config.border_thickness)
 

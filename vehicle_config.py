@@ -33,20 +33,25 @@ class VehicleConfig(Config):
         self.hog = Config()
         self.bin = Config()
         self.histogram = Config()
-        self.predict_cpus = 4
+        self.predict_cpus = 6
         # Threshold of heatmap
-        self.heatmap_threshold = 3
+        self.heatmap_threshold = 5
+        # Bounding box size threshold
+        self.bbox_threshold = 32
+        # Bounding box shape threshold
+        self.bbox_shape_threshold = 2
         # Color of car's bounding boxes
         self.border_color = [0, 0, 255]
         #thickness of color's bounding boxes
         self.border_thickness = 6
         # Slidings, each sliding is given as ((width, height), (top, botton))
         self.slidings = [#((378, 378), (302, 680)),
-            ((256, 256), (360, 680)),
-            ((128, 128), (320, 672)),
-            ((64, 64), (386, 514))]#,
-            #  ((32, 32), (422, 486))]
+            ((256, 180), (360, 680)),
+            ((128, 90), (320, 672)),
+            ((64, 64), (386, 514)),
+            ((32, 32), (422, 486))]
         self.slide_step = (16, 16)
+        self.current_image = None
 
 config = VehicleConfig()
 
@@ -65,11 +70,11 @@ config.hog.cells_per_block = 2
 config.hog.channels = 'ALL'
 config.bin.spatial_size = (32, 32)
 config.histogram.bins = 64
-config.histogram.range = [0, 255]
+config.histogram.range = [60, 255]
 
 # Training parameters
 # Training method, can be 'sgd', 'svc'
-config.train.method = "sgd"
+config.train.method = "svc"
 # The vehicle images' file filter
 config.train.vehicles = "./vehicles/**/*.png"
 # The non vehicle images' file filter
@@ -79,7 +84,7 @@ config.train.tune = False
 # Size of images used in training, (width, height)
 config.train.size = (64, 64)
 # Number of cpus to use for the process
-config.train.cpus=4
+config.train.cpus=6
 # Checkpoint base name
 config.train.checkpoint="model"
 # The batch size
@@ -87,7 +92,7 @@ config.train.batch_size = 2500
 # The portion of samples to be used for training
 config.train.train_split = 0.85
 # The number of epochs to train the detector
-config.train.epochs = 50
+config.train.epochs = 35
 # SGD loss, 'hinge' for SVM
 config.sgd.loss = 'hinge'
 # SGD alpha, result of the parameter tuning

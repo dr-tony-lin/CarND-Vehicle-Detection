@@ -52,12 +52,12 @@ def convert_color(image, cspace):
         convert_color.max = np.amax(image)
         if convert_color.max < 2: # the max pxe value should be 0 t 1
             convert_color.max = 1
-        else: # the max pxe value should be 0 t 255
-            convert_color.max = 255
+        else: # the max pxe value should be 0 t0 255
+            convert_color.max = 255.0
 
     # Normalize image first so the valus fall between 0 and 1
-    if convert_color.max == 255:
-        image = np.float32(image)/convert_color.max
+    if convert_color.max == 1:
+        image = np.uint8(image * 255.0)
     if cspace != 'RGB':
         if cspace == 'HSV':
             image = cv2.cvtColor(image, cv2.COLOR_RGB2HSV)

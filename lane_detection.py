@@ -7,8 +7,9 @@ import cv2
 import utils
 
 class Lane():
-    def __init__(self, min_y, max_y, smooth_factor=0.5, distance_thresh=75, curverature_threshold=100):
+    def __init__(self, config, min_y, max_y, smooth_factor=0.5, distance_thresh=75, curverature_threshold=100):
         # Minimal, and maximal y coordinate
+        self.config = config
         self.min_y = min_y
         self.max_y = max_y
         self.middle = (min_y + max_y) / 2
@@ -55,7 +56,8 @@ class Lane():
             if self.current_fit is not None:
                 dist = self.dist(fit)
                 if dist[1] > self.distance_thresh: # reject the line as it has exceeded the max change threshold
-                    print("Change in distance too big: ", dist)
+                    if self.config.test:
+                        print("Change in distance too big: ", dist)
                     self.detected = False
                     self.fails += 1
                     return False
@@ -63,8 +65,9 @@ class Lane():
                     radius_of_curvature = self.curverature(fit, self.middle)
                     diff = abs(radius_of_curvature - self.radius_of_curvature)
                     if 2*diff/(radius_of_curvature+self.radius_of_curvature) > self.curverature_threshold:
-                        print("Change in curverature too big: ", radius_of_curvature, self.radius_of_curvature, 
-                              radius_of_curvature / diff)
+                        if self.config.test:
+                            print("Change in curverature too big: ", radius_of_curvature, self.radius_of_curvature, 
+                                  radius_of_curvature / diff)
                         self.detected = False
                         self.fails += 1
                         return False
@@ -172,7 +175,8 @@ class Lane():
                 points.append([int(self.bestx(i)) + d, y])
             else:
                 points.append([int(self.x(i)) + d, y])
-        other = Lane(self.min_y, self.max_y, self.smooth_factor, self.distance_thresh, self.curverature_threshold)
+        other = Lane(self.config, self.min_y, self.max_y, self.smooth_factor, self.distance_thresh,
+                     self.curverature_threshold)
         other.set(points)
         other.commit()
         return other
@@ -344,10 +348,10 @@ class LaneDetector:
         '''
         Reset the lines
         '''
-        self.left_lane = Lane(self.config.crop[0], self.config.crop[1], self.config.smooth_factor,
+        self.left_lane = Lane(self.config, self.config.crop[0], self.config.crop[1], self.config.smooth_factor,
                               self.config.lane_shift_thresh, self.config.curverature_threshold)
-        self.right_lane = Lane(self.config.crop[0], self.config.crop[1], self.config.smooth_factor,
-                              self.config.lane_shift_thresh, self.config.curverature_threshold)
+        self.right_lane = Lane(self.config, self.config.crop[0], self.config.crop[1], self.config.smooth_factor,
+                               self.config.lane_shift_thresh, self.config.curverature_threshold)
 
     def start_detect(self, image):
         '''
@@ -494,8 +498,9 @@ class LaneDetector:
             left_lane = self.camera.perspective(left_lane)
             left_lane[:, 1] = left_lane[:, 1] + self.config.crop[0]
             if not self.left_lane.set(left_lane):
-                print("Left lane rejected!")
-                print("Left lane: ", self.left_lane.current, left_lane)
+                if self.config.test:
+                    print("Left lane rejected!")
+                    print("Left lane: ", self.left_lane.current, left_lane)
             if self.config.test:
                 print("Transform left lane: ", left_lane)
                 print("Left lane polynomial: ", self.left_lane.current_fit)
@@ -505,8 +510,9 @@ class LaneDetector:
             right_lane = self.camera.perspective(right_lane)
             right_lane[:, 1] = right_lane[:, 1] + self.config.crop[0]
             if not self.right_lane.set(right_lane):
-                print("Right lane rejected!")
-                print("Right lane: ", self.right_lane.current, ", new: ", right_lane)
+                if self.config.test:
+                    print("Right lane rejected!")
+                    print("Right lane: ", self.right_lane.current, ", new: ", right_lane)
             if self.config.test:
                 print("Transform right lane: ", right_lane)
                 print("Right lane polynomial: ", self.right_lane.current_fit)
