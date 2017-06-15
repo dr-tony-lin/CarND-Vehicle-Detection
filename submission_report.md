@@ -100,7 +100,7 @@ The final parameters settle on rbf for the kernel, and C=3. However, C seemed fi
 ##### SGD
 SGD, on the other hand, provides partial_fit function for incremental training. The training process goes through several epochs, and in each epoch, the entire set of training samples are shuffled first, and are divided into batches. Each batch of samples are loaded from files, and fed into the training pipeline. 35 epochs were used in my training processes, and epochs whose test accuracy was close to 98%.
 
-In addition to supporting incremental learning, SGD also has a much better performance than SVC. It is more than 7 times faster than SVC in prediction, and this makes it a better choice than SVC.
+In addition to supporting incremental learning, SGD also has a much better performance than SVC, and this makes it a much better choice than SVC, at least when using Scikit-learn.
 
 The SGD uses hinge loss function, and was tuned using sklearn.model_selection.GridSearchCV with the following parameters:
 ````
@@ -177,8 +177,6 @@ There are still few issues shown in the result videos which might indicate the f
 
 1. 97.9% test accuracy is still not good enough.
 2. There need a more robust way of dealing with prediction errors, heatmap and labeling alone may not be good enough.
-
-Also the videos looks darker that they should be, this is because of the parameters given in superimposing the overlays. This has been corrected, but the videos need to be produced.
 
 ### Performance Comparison of SGD and SVC
 The following table summaries the performance difference between SGD and SVC. It has shown that SDG is way superior to SVC in terms of training speed, detection speed, and trained model size!
