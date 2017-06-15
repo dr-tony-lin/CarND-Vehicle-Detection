@@ -45,8 +45,9 @@ class VehicleConfig(Config):
         #thickness of color's bounding boxes
         self.border_thickness = 6
         # Slidings, each sliding is given as ((width, height), (top, botton))
-        self.slidings = [#((378, 378), (302, 680)),
-            ((256, 180), (360, 680)),
+        self.slidings = [
+            #((378, 378), (302, 680)),
+            #((256, 180), (360, 680)),
             ((128, 90), (320, 672)),
             ((64, 64), (386, 514)),
             ((32, 32), (422, 486))]
@@ -70,7 +71,7 @@ config.hog.cells_per_block = 2
 config.hog.channels = 'ALL'
 config.bin.spatial_size = (32, 32)
 config.histogram.bins = 64
-config.histogram.range = [60, 255]
+config.histogram.range = [0, 255]
 
 # Training parameters
 # Training method, can be 'sgd', 'svc'

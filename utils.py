@@ -279,7 +279,14 @@ def hog(image, orientations, pixels_per_cell, cells_per_block, visualise=False, 
                      cells_per_block=(cells_per_block, cells_per_block), transform_sqrt=True, block_norm='L2-Hys',
                      visualise=visualise, feature_vector=feature_vector), None
 
-def show(images, dim=None, titles=None):
+def show(images, dim=None, titles=None, file=None):
+    '''
+    Show images
+    images the images to show
+    dim: diomension of the view in terms of number of rwos and columns
+    titles: titles of the images
+    file: Save the plot in the file instead of showing on screen
+    '''
     if dim is None:
         if len(images) <= 4:
             dim = [1, len(images)]
@@ -308,4 +315,7 @@ def show(images, dim=None, titles=None):
                 if titles is not None:
                     axes[row][column].set_title(titles[index], fontsize=8)
     plt.subplots_adjust(left=0.02, right=0.98, bottom=0.02, top=0.95, wspace=0.1, hspace=0.1)
-    plt.show()
+    if file is None:
+        plt.show()
+    else:
+        plt.savefig(file, bbox_inches='tight')

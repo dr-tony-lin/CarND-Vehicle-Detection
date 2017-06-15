@@ -275,7 +275,7 @@ class VehicleDetector:
 
     def _process_heatmap(self, draw, heatmap):
         # Threshold the heatmap
-        if self.config.current_image is not None:
+        if self.config.test:
             mpimg.imsave(self.config.test_output + "heatmap-{0}".format(self.config.current_image), heatmap)
         heatmap[heatmap <= self.config.heatmap_threshold] = 0
         # Label the heatmap
@@ -357,7 +357,8 @@ class VehicleDetector:
             # Initialize the overlay image, and heatmap
             overlay = np.zeros(image.shape, dtype=np.uint8)
             heatmap = np.zeros((image.shape[0], image.shape[1]), dtype=np.float)
-
+            if config.test and config.test_visualize:
+                copy = utils.to_rgb(np.copy(image), config.colorspace)
             # Loop all sliding configuration, for each configuration:
             # 1. Compute the scaling factor between the training image size and the sliding window size
             # 2. Crop the image to the detection range
@@ -391,7 +392,7 @@ class VehicleDetector:
                           resized.shape)
 
                 # Extract the detection features for all sliding window, each windows has a row of features
-                features, windows, image_hog = self._detection_features(resized)
+                features, windows, image_hog = self._detection_features(resized, slide)
                 features = np.array(features)
                 windows = np.array(windows)
 
@@ -414,15 +415,19 @@ class VehicleDetector:
                     heatmap[win[0][1]:win[1][1], win[0][0]:win[1][0]] += 1
                     if config.test:
                         matched_windows.append(win)
-
+                        if config.test_visualize:
+                            cv2.rectangle(copy, (win[0][0], win[0][1]), (win[1][0], win[1][1]),
+                                          [0, 0, 1], 1)
                 if config.test:
                     print("Detection time: {0}".format(time.time() - start))
                     print("Features: ", features.shape)
                     print("Predictions matches (", len(ones), "): ", ones)
                     print("Windows: ", len(windows), ", matched: ", matched_windows)
                     if image_hog is not None:
-                        mpimg.imsave(config.test_output + "hog{0}-{1}".format(slide[0][0], config.current_image),
+                        mpimg.imsave(config.test_output + "hog-{0}-{1}".format(slide[0][0], config.current_image),
                                      image_hog)
+            if config.test and config.test_visualize:
+                mpimg.imsave(config.test_output + "detected-{0}".format(config.current_image), copy)
             self._process_heatmap(overlay, heatmap)
             return overlay
 
@@ -433,7 +438,7 @@ class VehicleDetector:
         images: the images, can be an array of image files or RGB images
         '''
         result = []
-        with self.config as config, self.config.hog as hog, self.config.histogram as hist:
+        with self.config as config, self.config.histogram as hist:
             for image in images: # Iterate through the list of images
                 if isinstance(image, str):
                     image = mpimg.imread(image)
@@ -459,6 +464,7 @@ class VehicleDetector:
         Extract hog features
         image: the image
         train: True for training, False for detection
+        visualize: True to produce hog image
         '''
         hog_channels = []
         with self.config as config, self.config.hog as hog:
@@ -501,26 +507,19 @@ class VehicleDetector:
                     hog_channels.append(features)
         return hog_channels, hog_image
 
-    def _detection_features(self, image):
+    def _detection_features(self, image, slide):
         '''
         Extract detection features of the given image
         Arguments:
         image: the image, it should has been converted to the target colorspace
-        windows: the windows to extract the features
-        orientations: hog orientation to extract
-        pixels_per_cell: number of pixel per hog cell
-        cells_per_block: number of cells per hog block
-        hog_channel: the channel to extract for hog
-        bin_spatial_size: the number of color bins to extract
-        histogram_bins: the number of histogram bins
-        histogram_range: the histogram value range
+        slide: the slide, used for visualization purpose only
         '''
         result = []
         # Get hog features
         hog_channels = []
         with self.config as config, self.config.hog as hog, self.config.histogram as hist:
             # Extract hog features for the entire image
-            hog_channels, hog_image = self._extract_hog(image, train=False, visualise=True)
+            hog_channels, hog_image = self._extract_hog(image, train=False, visualise=config.test_visualize)
 
             blocks = ((image.shape[1] // hog.pixels_per_cell) - hog.cells_per_block + 1,
                       (image.shape[0] // hog.pixels_per_cell) - hog.cells_per_block + 1)
@@ -537,6 +536,7 @@ class VehicleDetector:
             result = []
             show = []
             title = []
+            sequence = 0
             for yb in range(steps[1]):
                 yc = yb * cells_per_step[1]
                 for xb in range(steps[0]):
@@ -566,14 +566,17 @@ class VehicleDetector:
                     result.append(features)
 
                     if config.test and config.test_visualize: # For visualization
-                        show.append(utils.to_rgb(np.uint8(subimg*255), config.colorspace))
+                        show.append(utils.to_rgb(subimg, config.colorspace))
                         show.append(hog_image[ytop:ytop+config.train.size[1], xleft:xleft+config.train.size[0]])
                         title.append("({0},{1}), ({2},{3})".format(xleft, ytop, xleft+config.train.size[0],
                                                                    ytop+config.train.size[1]))
                         title.append("HOG")
                         if len(show) >= 36:
-                            utils.show(images=show, dim=(4, 9), titles=title)
+                            utils.show(images=show, dim=(4, 9), titles=title,
+                                       file=config.test_output+"slide-{0}-{1}-{2}".format(slide[0][0], sequence,
+                                                                                          config.current_image))
                             show = []
                             title = []
+                            sequence += 1
         result = np.vstack(result)
         return result, windows, hog_image
