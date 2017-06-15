@@ -178,19 +178,21 @@ There are still few issues shown in the result videos which might indicate the f
 1. 97.9% test accuracy is still not good enough.
 2. There need a more robust way of dealing with prediction errors, heatmap and labeling alone may not be good enough.
 
-### Performance Comparison of SGD and SVC
-The following table summaries the performance difference between SGD and SVC
+Also the videos looks darker that they should be, this is because of the parameters given in superimposing the overlays. This has been corrected, but the videos need to be produced.
 
-|           |  Training     | Detection (18 images)    | Test Accuracy |
-|:---------:|:-------------:|:-------------:|:-------------:|
-| SGD       | 2974 seconds for 35 epochs  |   33 seconds	        |   97.9%       |
-| SVC       |               |   	        |   	        |
+### Performance Comparison of SGD and SVC
+The following table summaries the performance difference between SGD and SVC. It has shown that SDG is way superior to SVC in terms of training speed, detection speed, and trained model size!
+
+|           |  Training                    | Detection              | Test Accuracy | Model Size (K bytes) |
+|:---------:|:----------------------------:|:----------------------:|:-------------:|:--------------------:|
+| SGD       | 2,974 seconds for 35 epochs  |   33 seconds	        |   97.9%       |        244           |
+| SVC       | 5,632 seconds                |  707 seconds           |   95.9%       |    796,448           |
 
 Training was performed with 17,323 training samples and tested with 3,057 samples. I have added around 3,500 images to improve the training for detecting left/right passing vehicles, non-vehicles like road, tree, road side, and dark shadows.
 
 The detection time in the above table was measured using 18 images, and with 6 concurrent threads. For SGD, 97.9% test accuracy was achieved at the 19th epoch.
 
-The video processing performance was 0.6 frame/second with 6 concurrent thread as well.
+The video processing performance was 0.6 frame/second for SGD with 6 concurrent threads.
 
 ### Discussion and Further Works
 Due to time restriction, many areas that I plan to explored in near future include:

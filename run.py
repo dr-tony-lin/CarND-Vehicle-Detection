@@ -45,8 +45,8 @@ def process_image(image):
     while land_future.running() and vehicle_future.running():
         time.sleep(1) # sleep 1 seconds
     # Draw the detection result on the image
-    image = utils.weighted_img(image, land_future.result()[0])
-    image = utils.weighted_img(image, vehicle_future.result(), α=0.3, β=0.7)
+    overlay = utils.weighted_img(vehicle_future.result(), land_future.result()[0], α=1.0, β=0.5)
+    image = utils.weighted_img(image, overlay, α=1.0, β=0.7)
     if clip_name:
         mpimg.imsave(test_videos_output + "{0}{1}-detect.jpg".format(clip_name, clip_seq), image)
         clip_seq += 1
