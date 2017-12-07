@@ -35,7 +35,7 @@ class VehicleConfig(Config):
         self.histogram = Config()
         self.predict_cpus = 6
         # Threshold of heatmap
-        self.heatmap_threshold = 5
+        self.heatmap_threshold = 4
         # Bounding box size threshold
         self.bbox_threshold = 32
         # Bounding box shape threshold
@@ -62,20 +62,21 @@ config.test_visualize = False
 config.test_output = "test_outputs/"
 
 # The colorspace to use for vehicle detection, can be: HSV, HLS, YCrCb, YUV, and LUV
-config.colorspace = 'YCrCb'
+config.colorspace = 'HSV'
 
 # Hog orientations
-config.hog.orientations = 12
+config.hog.orientations = 13
 config.hog.pixels_per_cell = 8
 config.hog.cells_per_block = 2
-config.hog.channels = 'ALL'
-config.bin.spatial_size = (32, 32)
+config.hog.channels = [0, 1, 2]
+config.bin.spatial_size = (64, 64)
 config.histogram.bins = 64
-config.histogram.range = [0, 255]
+config.histogram.range = [40, 255]
 
 # Training parameters
+config.train.min_accuracy = 0.975
 # Training method, can be 'sgd', 'svc'
-config.train.method = "svc"
+config.train.method = "sgd"
 # The vehicle images' file filter
 config.train.vehicles = "./vehicles/**/*.png"
 # The non vehicle images' file filter

@@ -99,7 +99,6 @@ class VehicleDetector:
                 self.config.train.method = 'sgd'
             elif isinstance(self.classifier, SVC):
                 self.config.train.method = 'svc'
-
             return self
 
     def tune(self, samples, labels):
@@ -237,7 +236,7 @@ class VehicleDetector:
                 epoch_time = int(time.time() - epoch_start)
                 accuracy = self.classifier.score(test_features, test_labels)
                 print("Epoch {0} accuracy: {1}, time {2} seconds".format(epoch, accuracy, epoch_time))
-                if accuracy >= 0.96:
+                if accuracy >= config.train.min_accuracy:
                     print("Saving model ...")
                     self.save(config.train.checkpoint + '-{0}-{1}-{2}-{3}.mdl'.format(config.train.method,
                                                                                       config.colorspace, epoch,
@@ -275,8 +274,6 @@ class VehicleDetector:
 
     def _process_heatmap(self, draw, heatmap):
         # Threshold the heatmap
-        if self.config.test:
-            mpimg.imsave(self.config.test_output + "heatmap-{0}".format(self.config.current_image), heatmap)
         heatmap[heatmap <= self.config.heatmap_threshold] = 0
         # Label the heatmap
         labels = label(heatmap)
@@ -357,7 +354,7 @@ class VehicleDetector:
             # Initialize the overlay image, and heatmap
             overlay = np.zeros(image.shape, dtype=np.uint8)
             heatmap = np.zeros((image.shape[0], image.shape[1]), dtype=np.float)
-            if config.test and config.test_visualize:
+            if config.test_visualize:
                 copy = utils.to_rgb(np.copy(image), config.colorspace)
             # Loop all sliding configuration, for each configuration:
             # 1. Compute the scaling factor between the training image size and the sliding window size
@@ -415,19 +412,19 @@ class VehicleDetector:
                     heatmap[win[0][1]:win[1][1], win[0][0]:win[1][0]] += 1
                     if config.test:
                         matched_windows.append(win)
-                        if config.test_visualize:
-                            cv2.rectangle(copy, (win[0][0], win[0][1]), (win[1][0], win[1][1]),
-                                          [0, 0, 1], 1)
+                    if config.test_visualize:
+                        cv2.rectangle(copy, (win[0][0], win[0][1]), (win[1][0], win[1][1]), [0, 0, 1], 1)
                 if config.test:
                     print("Detection time: {0}".format(time.time() - start))
                     print("Features: ", features.shape)
                     print("Predictions matches (", len(ones), "): ", ones)
                     print("Windows: ", len(windows), ", matched: ", matched_windows)
-                    if image_hog is not None:
-                        mpimg.imsave(config.test_output + "hog-{0}-{1}".format(slide[0][0], config.current_image),
-                                     image_hog)
-            if config.test and config.test_visualize:
+                if image_hog is not None:
+                    mpimg.imsave(config.test_output + "hog-{0}-{1}".format(slide[0][0], config.current_image),
+                                 image_hog)
+            if config.test_visualize:
                 mpimg.imsave(config.test_output + "detected-{0}".format(config.current_image), copy)
+                mpimg.imsave(config.test_output + "heatmap-{0}".format(config.current_image), heatmap)
             self._process_heatmap(overlay, heatmap)
             return overlay
 
@@ -468,43 +465,22 @@ class VehicleDetector:
         '''
         hog_channels = []
         with self.config as config, self.config.hog as hog:
-            if config.hog.channels == 'ALL':
-                hog_image = None
-                for channel in range(image.shape[2]):
-                    features, him = utils.hog(image[:, :, channel],
-                                              orientations=hog.orientations,
-                                              pixels_per_cell=hog.pixels_per_cell,
-                                              cells_per_block=hog.cells_per_block,
-                                              visualise=visualise, feature_vector=train)
-                    if train:
-                        hog_channels = np.concatenate((hog_channels, features))
+            hog_image = None
+            for channel in config.hog.channels:
+                features, him = utils.hog(image[:, :, channel],
+                                          orientations=hog.orientations,
+                                          pixels_per_cell=hog.pixels_per_cell,
+                                          cells_per_block=hog.cells_per_block,
+                                          visualise=visualise, feature_vector=train)
+                if train:
+                    hog_channels = np.concatenate((hog_channels, features))
+                else:
+                    hog_channels.append(features)
+                if visualise:
+                    if hog_image is None:
+                        hog_image = him
                     else:
-                        hog_channels.append(features)
-                    if visualise:
-                        if hog_image is None:
-                            hog_image = him
-                        else:
-                            hog_image += him
-            elif len(image.shape) == 2: # Grayscale image
-                features, hog_image = utils.hog(image,
-                                                orientations=hog.orientations,
-                                                pixels_per_cell=hog.pixels_per_cell,
-                                                cells_per_block=hog.cells_per_block,
-                                                visualise=visualise, feature_vector=train)
-                if train:
-                    hog_channels = features
-                else:
-                    hog_channels.append(features)
-            else:
-                features, hog_image = utils.hog(image[:, :, hog.channels],
-                                                orientations=hog.orientations,
-                                                pixels_per_cell=hog.pixels_per_cell,
-                                                cells_per_block=hog.cells_per_block,
-                                                visualise=visualise, feature_vector=train)
-                if train:
-                    hog_channels = features
-                else:
-                    hog_channels.append(features)
+                        hog_image += him
         return hog_channels, hog_image
 
     def _detection_features(self, image, slide):
@@ -545,7 +521,7 @@ class VehicleDetector:
                     hog_features = []
                     for channel in hog_channels:
                         hog_features.append(channel[yc:yc+blocks_per_window[1], xc:xc+blocks_per_window[0]].ravel())
-                    hog_features = np.hstack(hog_features)
+                    features = np.hstack(hog_features)
 
                     xleft = xc * hog.pixels_per_cell
                     ytop = yc * hog.pixels_per_cell
@@ -556,12 +532,14 @@ class VehicleDetector:
 
                     # Get the sub image
                     subimg = image[ytop:ytop+config.train.size[1], xleft:xleft+config.train.size[0]]
-                    # Extract bin spatial
-                    bin_features = utils.bin_spatial(subimg, size=config.bin.spatial_size)
-                    #extract histogram
-                    histogram_features = utils.color_histogram(subimg, bins=hist.bins, range=hist.range)
+                    if config.bin.spatial_size is not None: # Extract bin spatial
+                        bin_features = utils.bin_spatial(subimg, size=config.bin.spatial_size)
+                        features = np.hstack((features, bin_features))
+                    if hist.bins is not None: #extract histogram
+                        histogram_features = utils.color_histogram(subimg, bins=hist.bins, range=hist.range)
+                        features = np.hstack((features, histogram_features))
                     # Put all features together in an array
-                    features = np.hstack((hog_features, bin_features, histogram_features)).reshape(1, -1)
+                    features = features.reshape(1, -1)
                     # Add the feature to the result set
                     result.append(features)
 
